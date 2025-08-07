@@ -614,7 +614,9 @@
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: SCOPES,
-                    callback: '', // defined later
+                    callback: (tokenResponse) => {
+        if (tokenResponse.error) {
+            updateDrive
                 });
                 gisInited = true;
                 maybeEnableButtons();
