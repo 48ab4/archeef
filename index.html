@@ -3,1545 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام استقبال بيانات العملاء</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>رفع الملفات إلى Google Drive</title>
     <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
-        
         body {
             font-family: 'Cairo', sans-serif;
         }
-        
-        .file-drop-zone {
-            border: 2px dashed #cbd5e1;
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .upload-area {
+            border: 2px dashed #cbd5e0;
             transition: all 0.3s ease;
         }
-        
-        .file-drop-zone.dragover {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
+        .upload-area:hover {
+            border-color: #4285f4;
+            background-color: #f8faff;
         }
-        
-        .uploaded-file {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .success-message {
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .upload-area.dragover {
+            border-color: #4285f4;
+            background-color: #e3f2fd;
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+<body class="gradient-bg min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">نظام استقبال بيانات العملاء</h1>
-            <p class="text-gray-600">يرجى ملء البيانات المطلوبة ورفع الملفات الضرورية</p>
+            <h1 class="text-4xl font-bold text-white mb-4">📁 مدير Google Drive</h1>
+            <p class="text-xl text-white opacity-90">ارفع وأدر ملفاتك بسهولة</p>
         </div>
 
-        <!-- Main Form -->
-        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-            <form id="clientForm" class="space-y-6">
-                <!-- Personal Information Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">1</span>
-                        البيانات الشخصية
-                    </h2>
-                    
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">الاسم *</label>
-                            <input type="text" id="fullName"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">الهوية *</label>
-                            <input type="text" id="nationalId"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">تاريخ الميلاد *</label>
-                            <input type="date" id="birthDate"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">الهاتف *</label>
-                            <input type="tel" id="phone"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div class="md:col-span-2">
-                            <label class="block text-gray-700 font-medium mb-2">البريد الإلكتروني *</label>
-                            <input type="email" id="email"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                    </div>
+        <!-- Main Card -->
+        <div class="max-w-2xl mx-auto bg-white rounded-2xl card-shadow p-8">
+            <!-- Connection Status -->
+            <div id="connectionStatus" class="mb-6 p-4 rounded-lg bg-gray-100 text-center">
+                <div class="flex items-center justify-center mb-2">
+                    <div class="w-3 h-3 bg-red-500 rounded-full ml-2"></div>
+                    <span class="font-semibold text-gray-700">غير متصل بـ Google Drive</span>
                 </div>
+                <p class="text-sm text-gray-600">يرجى الاتصال أولاً لتتمكن من رفع الملفات</p>
+            </div>
 
-                <!-- Academic Information Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">2</span>
-                        البيانات العلمية
-                    </h2>
-                    
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">المؤهل *</label>
-                            <select id="qualification"  
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="">اختر المؤهل</option>
-                                <option value="bachelor">بكالوريوس</option>
-                                <option value="master">ماجستير</option>
-                                <option value="phd">دكتوراه</option>
-                                <option value="diploma">دبلوم</option>
-                                <option value="other">أخرى</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">التخصص *</label>
-                            <input type="text" id="specialization"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">التقدير *</label>
-                            <select id="grade"  
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="">اختر التقدير</option>
-                                <option value="excellent">ممتاز</option>
-                                <option value="very-good">جيد جداً</option>
-                                <option value="good">جيد</option>
-                                <option value="acceptable">مقبول</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">الدرجة</label>
-                            <input type="text" id="degree" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                   placeholder="مثال: 3.8 من 4.0">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">تاريخ الحصول على المؤهل *</label>
-                            <input type="date" id="graduationDate"  
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">تاريخ المباشرة</label>
-                            <input type="date" id="startDate" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div class="md:col-span-2">
-                            <label class="block text-gray-700 font-medium mb-2">المرحلة</label>
-                            <select id="stage" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="">اختر المرحلة</option>
-                                <option value="primary">ابتدائي</option>
-                                <option value="intermediate">متوسط</option>
-                                <option value="secondary">ثانوي</option>
-                                <option value="university">جامعي</option>
-                                <option value="postgraduate">دراسات عليا</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Professional License Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">3</span>
-                        الرخصة المهنية
-                    </h2>
-                    
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">رقم الرخصة المهنية</label>
-                            <input type="text" id="licenseNumber" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">تاريخ إصدار الرخصة</label>
-                            <input type="date" id="licenseIssueDate" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">تاريخ انتهاء الرخصة</label>
-                            <input type="date" id="licenseExpiryDate" 
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">حالة الرخصة</label>
-                            <select id="licenseStatus" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="">اختر حالة الرخصة</option>
-                                <option value="active">نشطة</option>
-                                <option value="expired">منتهية الصلاحية</option>
-                                <option value="suspended">معلقة</option>
-                                <option value="pending">قيد المراجعة</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Service Type Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">4</span>
-                        نوع الخدمة المطلوبة
-                    </h2>
-                    
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">نوع الخدمة *</label>
-                            <select id="serviceType"  
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="">اختر نوع الخدمة</option>
-                                <option value="consultation">استشارة</option>
-                                <option value="contract">عقد</option>
-                                <option value="registration">تسجيل</option>
-                                <option value="other">أخرى</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-2">الأولوية</label>
-                            <select id="priority" 
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                                <option value="normal">عادية</option>
-                                <option value="urgent">عاجلة</option>
-                                <option value="very-urgent">عاجلة جداً</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <label class="block text-gray-700 font-medium mb-2">تفاصيل إضافية</label>
-                        <textarea id="serviceDetails" rows="4" 
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                  placeholder="يرجى وصف الخدمة المطلوبة بالتفصيل..."></textarea>
-                    </div>
-                </div>
-
-                <!-- Assessment Elements Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">5</span>
-                        عناصر التقييم والشواهد
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <!-- Assessment Element 1 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">أداء الواجبات الوظيفية</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence1" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(1, this)">
-                                <button onclick="document.getElementById('evidence1').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence1-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 2 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">التفاعل مع زملاء العمل</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence2" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(2, this)">
-                                <button onclick="document.getElementById('evidence2').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence2-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 3 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">التفاعل مع أولياء الأمور</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence3" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(3, this)">
-                                <button onclick="document.getElementById('evidence3').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence3-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 4 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">تنويع استراتيجيات التدريس</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence4" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(4, this)">
-                                <button onclick="document.getElementById('evidence4').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence4-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 5 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">تحسين نتائج المتعلمين</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence5" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(5, this)">
-                                <button onclick="document.getElementById('evidence5').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence5-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 6 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">إعداد وتنفيذ خطة التعلم</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence6" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(6, this)">
-                                <button onclick="document.getElementById('evidence6').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence6-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 7 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">توظيف الوسائل والتقنيات التعليمية المناسبة</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence7" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(7, this)">
-                                <button onclick="document.getElementById('evidence7').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence7-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 8 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">البيئة العلمية الصفية</h3>
-                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">5%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence8" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(8, this)">
-                                <button onclick="document.getElementById('evidence8').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence8-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 9 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">إدارة الصف</h3>
-                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">5%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence9" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(9, this)">
-                                <button onclick="document.getElementById('evidence9').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence9-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 10 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">تحليل نتائج المتعلمين ومستوى تحصيلهم</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence10" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(10, this)">
-                                <button onclick="document.getElementById('evidence10').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence10-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-
-                        <!-- Assessment Element 11 -->
-                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-gray-800">تنويع أساليب التقويم</h3>
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">10%</span>
-                            </div>
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <input type="file" id="evidence11" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden" onchange="handleEvidenceUpload(11, this)">
-                                <button onclick="document.getElementById('evidence11').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                    رفع الشاهد
-                                </button>
-                                <div id="evidence11-status" class="text-sm text-gray-600"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Progress Summary -->
-                    <div class="mt-6 bg-white rounded-lg p-4 border border-gray-200">
-                        <h3 class="font-semibold text-gray-800 mb-3">ملخص التقدم</h3>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">الشواهد المرفوعة:</span>
-                            <span id="evidenceProgress" class="font-semibold text-blue-600">0 من 11</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Additional Files Section -->
-                <div class="bg-gray-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">6</span>
-                        ملفات إضافية (اختيارية)
-                    </h2>
-                    
-                    <!-- File Drop Zone -->
-                    <div id="fileDropZone" class="file-drop-zone border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 transition-all">
-                        <div class="space-y-4">
-                            <div class="text-6xl text-gray-400">📁</div>
-                            <div>
-                                <p class="text-lg font-medium text-gray-700">اسحب الملفات هنا أو انقر للاختيار</p>
-                                <p class="text-sm text-gray-500 mt-2">يمكنك رفع ملفات PDF, DOC, DOCX, JPG, PNG (حد أقصى 10 ميجابايت لكل ملف)</p>
-                            </div>
-                            <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden">
-                        </div>
-                    </div>
-                    
-                    <!-- Uploaded Files List -->
-                    <div id="uploadedFiles" class="mt-6 space-y-3"></div>
-                </div>
-
-                <!-- Google Drive Settings -->
-                <div class="bg-yellow-50 rounded-xl p-6 border border-yellow-200">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">⚙️</span>
-                        إعدادات Google Drive
-                    </h2>
-                    
-                    <div id="driveAuthSection" class="space-y-4">
-                        <div class="bg-white rounded-lg p-4 border border-yellow-200">
-                            <p class="text-gray-700 mb-3">للحفظ على Google Drive، يجب أولاً تسجيل الدخول إلى حسابك:</p>
-                            <button type="button" id="authorizeBtn" onclick="handleAuthClick()" 
-                                    class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                                🔐 تسجيل الدخول إلى Google Drive
-                            </button>
-                            <button id="signoutBtn" onclick="handleSignoutClick()" style="display: none;"
-                                    class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold mr-3">
-                                تسجيل الخروج
-                            </button>
-                        </div>
-                        
-                        <div id="driveStatus" class="bg-white rounded-lg p-4 border border-gray-200">
-                            <p class="text-gray-600">الحالة: غير متصل بـ Google Drive</p>
-                        </div>
-                        
-                        <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                            <h3 class="font-semibold text-blue-800 mb-2">ملاحظة مهمة:</h3>
-                            <p class="text-blue-700 text-sm">
-                                • سيتم إنشاء مجلد "بيانات العملاء" في Google Drive الخاص بك<br>
-                                • سيتم حفظ ملف JSON يحتوي على جميع البيانات<br>
-                                • الشواهد والملفات ستُحفظ في مجلدات منفصلة لكل عميل<br>
-                                • يمكنك الوصول للملفات من أي مكان عبر Google Drive
-                            </p>
-                        </div>
-                        
-                        <div class="bg-red-50 rounded-lg p-4 border border-red-200">
-                            <h3 class="font-semibold text-red-800 mb-2">⚠️ للتفعيل الكامل:</h3>
-                            <p class="text-red-700 text-sm">
-                                هذا النظام يحتاج إلى إعداد Google Drive API:<br>
-                                1. إنشاء مشروع في Google Cloud Console<br>
-                                2. تفعيل Google Drive API<br>
-                                3. إنشاء Client ID و API Key<br>
-                                4. استبدال القيم في الكود<br><br>
-                                <strong>حالياً:</strong> النظام يعمل في وضع العرض التوضيحي ويحفظ البيانات محلياً فقط.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Submit Button -->
-                <div class="text-center pt-6">
-                    <button type="submit" id="submitBtn" 
-                            class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 shadow-lg">
-                        💾 حفظ البيانات على Google Drive
-                    </button>
-                    <p class="text-sm text-gray-600 mt-2">سيتم حفظ البيانات محلياً وعلى Google Drive</p>
-                </div>
-            </form>
-        </div>
-
-        <!-- Success Message -->
-        <div id="successMessage" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-2xl p-8 max-w-md mx-4 text-center success-message">
-                <div class="text-6xl text-green-500 mb-4">✅</div>
-                <h3 class="text-2xl font-bold text-gray-800 mb-2">تم الإرسال بنجاح!</h3>
-                <p class="text-gray-600 mb-6">تم استلام بياناتك وملفاتك بنجاح. سيتم التواصل معك قريباً.</p>
-                <button onclick="closeSuccessMessage()" 
-                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                    إغلاق
+            <!-- Connect Button -->
+            <div class="text-center mb-8">
+                <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <svg class="w-6 h-6 inline-block ml-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+                    </svg>
+                    الاتصال بـ Google Drive
                 </button>
             </div>
-        </div>
 
-        <!-- Stored Data Display -->
-        <div id="storedDataSection" class="hidden max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">البيانات المحفوظة</h2>
-            <div id="storedDataList" class="space-y-4"></div>
-            <button onclick="clearStoredData()" 
-                    class="mt-6 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                مسح جميع البيانات
-            </button>
-        </div>
+            <!-- Upload Section -->
+            <div id="uploadSection" class="opacity-50 pointer-events-none">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">رفع الملفات</h2>
+                
+                <!-- Drag & Drop Area -->
+                <div id="uploadArea" class="upload-area rounded-xl p-8 text-center mb-6 cursor-pointer">
+                    <div class="mb-4">
+                        <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">اسحب الملفات هنا</h3>
+                    <p class="text-gray-500 mb-4">أو انقر لاختيار الملفات</p>
+                    <input type="file" id="fileInput" multiple class="hidden">
+                    <button id="selectBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+                        اختيار الملفات
+                    </button>
+                </div>
 
-        <!-- Client Details Modal -->
-        <div id="clientDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-2xl">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-3xl font-bold text-gray-800">التفاصيل الكاملة للعميل</h2>
-                        <button onclick="closeClientDetails()" class="text-gray-500 hover:text-gray-700 text-2xl">
-                            ✕
-                        </button>
+                <!-- Upload Progress -->
+                <div id="uploadProgress" class="hidden mb-6">
+                    <div class="bg-gray-200 rounded-full h-3 mb-2">
+                        <div id="progressBar" class="bg-green-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="progressText" class="text-sm text-gray-600 text-center">جاري الرفع...</p>
+                </div>
+
+                <!-- Upload Button -->
+                <div class="text-center">
+                    <button id="uploadBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        رفع إلى Google Drive
+                    </button>
+                </div>
+            </div>
+
+            <!-- Files List -->
+            <div id="filesList" class="mt-8 hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">الملفات المحددة:</h3>
+                <div id="filesContainer" class="space-y-2"></div>
+            </div>
+
+            <!-- Demo Notice -->
+            <div class="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-yellow-600 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-yellow-800">نموذج تجريبي</p>
+                        <p class="text-sm text-yellow-700">هذا نموذج تجريبي. للاتصال الفعلي بـ Google Drive، تحتاج إلى إعداد Google Drive API مع مفاتيح المصادقة المناسبة.</p>
                     </div>
                 </div>
-                <div id="clientDetailsContent" class="p-8"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Google Drive API configuration
-        const CLIENT_ID = '883555732132-kktvprdnoh95l05e7gdfo58g3ths4api.apps.googleusercontent.com'; // يجب استبدالها بـ Client ID الحقيقي
-        const API_KEY = 'AIzaSyBTYQ93RUBmgvOZjw0B3dGI0cQlDEu1z3I'; // يجب استبدالها بـ API Key الحقيقي
-        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    let isConnected = false;
+    let selectedFiles = [];
 
-        let gapi;
-        let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-        let isAuthorized = false;
+    // Client & API
+    const CLIENT_ID = '883555732132-kktvprdnoh95l05e7gdfo58g3ths4api.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyBTYQ93RUBmgvOZjw0B3dGI0cQlDEu1z3I';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-        // Storage for client data
-        let clientsData = JSON.parse(localStorage.getItem('clientsData')) || [];
-        let uploadedFiles = [];
-        let evidenceFiles = {}; // Store evidence files for each assessment element
-        let uploadedEvidenceCount = 0;
+    // عناصر الصفحة
+    const connectBtn = document.getElementById('connectBtn');
+    const uploadSection = document.getElementById('uploadSection');
+    const connectionStatus = document.getElementById('connectionStatus');
 
-        // Google Drive API initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            gapiLoaded();
-            gisLoaded();
-        });
-
-        async function gapiLoaded() {
-            if (typeof gapi !== 'undefined') {
-                await gapi.load('client', initializeGapiClient);
-            } else {
-                // Fallback: show demo mode message
-                updateDriveStatus('وضع العرض التوضيحي - Google Drive API غير متاح', 'warning');
-            }
-        }
-
-        async function initializeGapiClient() {
-            try {
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    discoveryDocs: [DISCOVERY_DOC],
-                });
-                gapiInited = true;
-                maybeEnableButtons();
-            } catch (error) {
-                console.log('Error initializing GAPI client:', error);
-                updateDriveStatus('خطأ في تهيئة Google Drive API', 'error');
-            }
-        }
-
-        async function gisLoaded() {
-            if (typeof google !== 'undefined' && google.accounts) {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    callback: (tokenResponse) => {
-        if (tokenResponse.error) {
-            updateDrive
-                });
-                gisInited = true;
-                maybeEnableButtons();
-            }
-        }
-
-        function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                document.getElementById('authorizeBtn').style.display = 'inline-block';
-            }
-        }
-
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    throw (resp);
-                }
-                document.getElementById('signoutBtn').style.display = 'inline-block';
-                document.getElementById('authorizeBtn').style.display = 'none';
-                isAuthorized = true;
-                updateDriveStatus('متصل بـ Google Drive بنجاح! ✅', 'success');
-            };
-
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                document.getElementById('authorizeBtn').style.display = 'inline-block';
-                document.getElementById('signoutBtn').style.display = 'none';
-                isAuthorized = false;
-                updateDriveStatus('تم قطع الاتصال مع Google Drive', 'warning');
-            }
-        }
-
-        function updateDriveStatus(message, type) {
-            const statusElement = document.getElementById('driveStatus');
-            const colors = {
-                success: 'bg-green-50 border-green-200 text-green-700',
-                warning: 'bg-yellow-50 border-yellow-200 text-yellow-700',
-                error: 'bg-red-50 border-red-200 text-red-700',
-                info: 'bg-blue-50 border-blue-200 text-blue-700'
-            };
-            
-            statusElement.className = `rounded-lg p-4 border ${colors[type] || colors.info}`;
-            statusElement.innerHTML = `<p>الحالة: ${message}</p>`;
-        }
-
-        // Create folder in Google Drive
-        async function createDriveFolder(name, parentId = null) {
-            const metadata = {
-                name: name,
-                mimeType: 'application/vnd.google-apps.folder',
-                parents: parentId ? [parentId] : undefined
-            };
-
-            try {
-                const response = await gapi.client.drive.files.create({
-                    resource: metadata
-                });
-                return response.result.id;
-            } catch (error) {
-                console.error('Error creating folder:', error);
-                throw error;
-            }
-        }
-
-        // Upload file to Google Drive
-        async function uploadFileToDrive(file, fileName, parentId = null) {
-            const metadata = {
-                name: fileName,
-                parents: parentId ? [parentId] : undefined
-            };
-
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-            form.append('file', file);
-
-            try {
-                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: new Headers({
-                        'Authorization': `Bearer ${gapi.client.getToken().access_token}`
-                    }),
-                    body: form
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                throw error;
-            }
-        }
-
-        // Save client data to Google Drive
-        async function saveToGoogleDrive(clientData) {
-            if (!isAuthorized) {
-                alert('يجب تسجيل الدخول إلى Google Drive أولاً');
-                return false;
-            }
-
-            try {
-                // Create main folder if it doesn't exist
-                const mainFolderId = await createDriveFolder('بيانات العملاء');
-                
-                // Create client-specific folder
-                const clientFolderName = `${clientData.fullName}_${clientData.nationalId}_${new Date().toISOString().split('T')[0]}`;
-                const clientFolderId = await createDriveFolder(clientFolderName, mainFolderId);
-
-                // Save client data as JSON
-                const jsonData = JSON.stringify(clientData, null, 2);
-                const jsonBlob = new Blob([jsonData], {type: 'application/json'});
-                await uploadFileToDrive(jsonBlob, 'بيانات_العميل.json', clientFolderId);
-
-                // Upload evidence files
-                if (clientData.evidenceFiles) {
-                    const evidenceFolderId = await createDriveFolder('الشواهد', clientFolderId);
-                    
-                    for (const [elementId, evidence] of Object.entries(clientData.evidenceFiles)) {
-                        if (evidence && evidence.name && !elementId.includes('_uploaded')) {
-                            // Note: In a real implementation, you would need to store the actual file data
-                            // This is a limitation of the current demo setup
-                            const demoFile = new Blob([`شاهد العنصر ${elementId}: ${evidence.name}`], {type: 'text/plain'});
-                            await uploadFileToDrive(demoFile, `شاهد_${elementId}_${evidence.name}.txt`, evidenceFolderId);
-                        }
-                    }
-                }
-
-                // Upload additional files
-                if (clientData.files && clientData.files.length > 0) {
-                    const filesFolderId = await createDriveFolder('ملفات_إضافية', clientFolderId);
-                    
-                    for (const file of clientData.files) {
-                        // Note: In a real implementation, you would need to store the actual file data
-                        const demoFile = new Blob([`ملف إضافي: ${file.name}`], {type: 'text/plain'});
-                        await uploadFileToDrive(demoFile, `${file.name}.txt`, filesFolderId);
-                    }
-                }
-
-                updateDriveStatus('تم حفظ البيانات على Google Drive بنجاح! 🎉', 'success');
-                return true;
-            } catch (error) {
-                console.error('Error saving to Google Drive:', error);
-                updateDriveStatus('خطأ في حفظ البيانات على Google Drive', 'error');
-                return false;
-            }
-        }
-
-        // File handling
-        const fileDropZone = document.getElementById('fileDropZone');
-        const fileInput = document.getElementById('fileInput');
-        const uploadedFilesContainer = document.getElementById('uploadedFiles');
-
-        // File drop zone events
-        fileDropZone.addEventListener('click', () => fileInput.click());
-        fileDropZone.addEventListener('dragover', handleDragOver);
-        fileDropZone.addEventListener('dragleave', handleDragLeave);
-        fileDropZone.addEventListener('drop', handleDrop);
-        fileInput.addEventListener('change', handleFileSelect);
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            fileDropZone.classList.add('dragover');
-        }
-
-        function handleDragLeave(e) {
-            e.preventDefault();
-            fileDropZone.classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            fileDropZone.classList.remove('dragover');
-            const files = Array.from(e.dataTransfer.files);
-            processFiles(files);
-        }
-
-        function handleFileSelect(e) {
-            const files = Array.from(e.target.files);
-            processFiles(files);
-        }
-
-        function processFiles(files) {
-            files.forEach(file => {
-                if (validateFile(file)) {
-                    uploadedFiles.push({
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        id: Date.now() + Math.random()
-                    });
-                    displayUploadedFile(file);
-                }
-            });
-        }
-
-        function validateFile(file) {
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png'];
-            
-            if (file.size > maxSize) {
-                alert(`الملف ${file.name} كبير جداً. الحد الأقصى 10 ميجابايت.`);
-                return false;
-            }
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert(`نوع الملف ${file.name} غير مدعوم.`);
-                return false;
-            }
-            
-            return true;
-        }
-
-        function displayUploadedFile(file) {
-            const fileElement = document.createElement('div');
-            fileElement.className = 'uploaded-file bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between';
-            fileElement.innerHTML = `
-                <div class="flex items-center space-x-3 space-x-reverse">
-                    <div class="text-2xl">${getFileIcon(file.type)}</div>
-                    <div>
-                        <p class="font-medium text-gray-800">${file.name}</p>
-                        <p class="text-sm text-gray-500">${formatFileSize(file.size)}</p>
-                    </div>
+    function updateConnectionStatus() {
+        if (isConnected) {
+            connectionStatus.innerHTML = `
+                <div class="flex items-center justify-center mb-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
+                    <span class="font-semibold text-gray-700">متصل بـ Google Drive</span>
                 </div>
-                <button onclick="removeFile('${file.name}')" class="text-red-500 hover:text-red-700 transition-colors">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
+                <p class="text-sm text-gray-600">يمكنك الآن رفع الملفات</p>
             `;
-            uploadedFilesContainer.appendChild(fileElement);
+            connectionStatus.className = 'mb-6 p-4 rounded-lg bg-green-50 text-center border border-green-200';
         }
+    }
 
-        function getFileIcon(type) {
-            if (type.includes('pdf')) return '📄';
-            if (type.includes('word') || type.includes('document')) return '📝';
-            if (type.includes('image')) return '🖼️';
-            return '📎';
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 بايت';
-            const k = 1024;
-            const sizes = ['بايت', 'كيلوبايت', 'ميجابايت'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function removeFile(fileName) {
-            uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
-            const fileElements = uploadedFilesContainer.children;
-            for (let element of fileElements) {
-                if (element.textContent.includes(fileName)) {
-                    element.remove();
-                    break;
-                }
-            }
-        }
-
-        // Evidence handling functions
-        function handleEvidenceUpload(elementId, input) {
-            const file = input.files[0];
-            if (file && validateFile(file)) {
-                // Store the evidence file
-                evidenceFiles[elementId] = {
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    id: Date.now() + Math.random()
-                };
-                
-                // Update status display
-                const statusElement = document.getElementById(`evidence${elementId}-status`);
-                statusElement.innerHTML = `
-                    <div class="flex items-center space-x-2 space-x-reverse">
-                        <span class="text-green-600">✓</span>
-                        <span class="text-green-600">${file.name}</span>
-                        <button onclick="removeEvidence(${elementId})" class="text-red-500 hover:text-red-700 text-xs">
-                            حذف
-                        </button>
-                    </div>
-                `;
-                
-                // Update progress if this is a new evidence
-                if (!evidenceFiles[elementId + '_uploaded']) {
-                    evidenceFiles[elementId + '_uploaded'] = true;
-                    uploadedEvidenceCount++;
-                    updateProgressBar();
-                }
-            }
-        }
-
-        function removeEvidence(elementId) {
-            if (evidenceFiles[elementId]) {
-                delete evidenceFiles[elementId];
-                if (evidenceFiles[elementId + '_uploaded']) {
-                    delete evidenceFiles[elementId + '_uploaded'];
-                    uploadedEvidenceCount--;
-                    updateProgressBar();
-                }
-                
-                // Clear status display
-                const statusElement = document.getElementById(`evidence${elementId}-status`);
-                statusElement.innerHTML = '';
-                
-                // Reset file input
-                const fileInput = document.getElementById(`evidence${elementId}`);
-                fileInput.value = '';
-            }
-        }
-
-        function updateProgressBar() {
-            const progressText = document.getElementById('evidenceProgress');
-            const progressBar = document.getElementById('progressBar');
-            
-            progressText.textContent = `${uploadedEvidenceCount} من 11`;
-            const percentage = (uploadedEvidenceCount / 11) * 100;
-            progressBar.style.width = `${percentage}%`;
-            
-            // Change color based on progress
-            if (percentage === 100) {
-                progressBar.className = 'bg-green-600 h-2 rounded-full transition-all duration-300';
-            } else if (percentage >= 50) {
-                progressBar.className = 'bg-yellow-600 h-2 rounded-full transition-all duration-300';
-            } else {
-                progressBar.className = 'bg-blue-600 h-2 rounded-full transition-all duration-300';
-            }
-        }
-
-        // Form submission
-        document.getElementById('clientForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Show loading state
-            const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '⏳ جاري الحفظ...';
-            submitBtn.disabled = true;
-            
-            const formData = {
-                id: Date.now(),
-                fullName: document.getElementById('fullName').value,
-                nationalId: document.getElementById('nationalId').value,
-                birthDate: document.getElementById('birthDate').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                qualification: document.getElementById('qualification').value,
-                specialization: document.getElementById('specialization').value,
-                grade: document.getElementById('grade').value,
-                degree: document.getElementById('degree').value,
-                graduationDate: document.getElementById('graduationDate').value,
-                startDate: document.getElementById('startDate').value,
-                stage: document.getElementById('stage').value,
-                licenseNumber: document.getElementById('licenseNumber').value,
-                licenseIssueDate: document.getElementById('licenseIssueDate').value,
-                licenseExpiryDate: document.getElementById('licenseExpiryDate').value,
-                licenseStatus: document.getElementById('licenseStatus').value,
-                serviceType: document.getElementById('serviceType').value,
-                priority: document.getElementById('priority').value,
-                serviceDetails: document.getElementById('serviceDetails').value,
-                files: uploadedFiles,
-                evidenceFiles: evidenceFiles,
-                evidenceCount: uploadedEvidenceCount,
-                submissionDate: new Date().toLocaleString('ar-SA')
-            };
-            
-            // Store data locally
-            clientsData.push(formData);
-            localStorage.setItem('clientsData', JSON.stringify(clientsData));
-            
-            // Try to save to Google Drive
-            let driveSuccess = false;
-            if (isAuthorized) {
-                try {
-                    driveSuccess = await saveToGoogleDrive(formData);
-                } catch (error) {
-                    console.error('Google Drive save failed:', error);
-                }
-            }
-            
-            // Show success message
-            const successMessage = document.getElementById('successMessage');
-            const successContent = successMessage.querySelector('.success-message');
-            
-            if (driveSuccess) {
-                successContent.innerHTML = `
-                    <div class="text-6xl text-green-500 mb-4">✅</div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">تم الحفظ بنجاح!</h3>
-                    <p class="text-gray-600 mb-6">
-                        تم حفظ بياناتك محلياً وعلى Google Drive بنجاح.<br>
-                        يمكنك الوصول للملفات من Google Drive في أي وقت.
-                    </p>
-                    <button onclick="closeSuccessMessage()" 
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        إغلاق
-                    </button>
-                `;
-            } else {
-                successContent.innerHTML = `
-                    <div class="text-6xl text-yellow-500 mb-4">⚠️</div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-2">تم الحفظ محلياً</h3>
-                    <p class="text-gray-600 mb-6">
-                        تم حفظ بياناتك محلياً بنجاح.<br>
-                        ${!isAuthorized ? 'لم يتم الحفظ على Google Drive - يرجى تسجيل الدخول أولاً.' : 'حدث خطأ في الحفظ على Google Drive.'}
-                    </p>
-                    <button onclick="closeSuccessMessage()" 
-                            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        إغلاق
-                    </button>
-                `;
-            }
-            
-            successMessage.classList.remove('hidden');
-            
-            // Reset form
-            document.getElementById('clientForm').reset();
-            uploadedFiles = [];
-            uploadedFilesContainer.innerHTML = '';
-            
-            // Reset evidence files
-            evidenceFiles = {};
-            uploadedEvidenceCount = 0;
-            updateProgressBar();
-            
-            // Clear all evidence status displays
-            for (let i = 1; i <= 11; i++) {
-                const statusElement = document.getElementById(`evidence${i}-status`);
-                if (statusElement) {
-                    statusElement.innerHTML = '';
-                }
-            }
-            
-            // Reset button
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            
-            // Update stored data display
-            displayStoredData();
-        });
-
-        function closeSuccessMessage() {
-            document.getElementById('successMessage').classList.add('hidden');
-        }
-
-        function displayStoredData() {
-            const storedDataSection = document.getElementById('storedDataSection');
-            const storedDataList = document.getElementById('storedDataList');
-            
-            if (clientsData.length === 0) {
-                storedDataSection.classList.add('hidden');
-                return;
-            }
-            
-            storedDataSection.classList.remove('hidden');
-            storedDataList.innerHTML = '';
-            
-            clientsData.forEach((client, index) => {
-                const clientElement = document.createElement('div');
-                clientElement.className = 'bg-gray-50 rounded-lg p-4 border border-gray-200';
-                clientElement.innerHTML = `
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="text-lg font-semibold text-gray-800">${client.fullName}</h3>
-                        <span class="text-sm text-gray-500">${client.submissionDate}</span>
-                    </div>
-                    
-                    <!-- البيانات الشخصية -->
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">البيانات الشخصية:</h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <p><strong>الهوية:</strong> ${client.nationalId}</p>
-                            <p><strong>تاريخ الميلاد:</strong> ${client.birthDate || 'غير محدد'}</p>
-                            <p><strong>الهاتف:</strong> ${client.phone}</p>
-                            <p><strong>البريد:</strong> ${client.email}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- البيانات العلمية -->
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">البيانات العلمية:</h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <p><strong>المؤهل:</strong> ${getQualificationText(client.qualification)}</p>
-                            <p><strong>التخصص:</strong> ${client.specialization || 'غير محدد'}</p>
-                            <p><strong>التقدير:</strong> ${getGradeText(client.grade)}</p>
-                            <p><strong>الدرجة:</strong> ${client.degree || 'غير محدد'}</p>
-                            <p><strong>تاريخ التخرج:</strong> ${client.graduationDate || 'غير محدد'}</p>
-                            <p><strong>تاريخ المباشرة:</strong> ${client.startDate || 'غير محدد'}</p>
-                            <p><strong>المرحلة:</strong> ${getStageText(client.stage)}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- الرخصة المهنية -->
-                    ${client.licenseNumber ? `
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">الرخصة المهنية:</h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <p><strong>رقم الرخصة:</strong> ${client.licenseNumber}</p>
-                            <p><strong>تاريخ الإصدار:</strong> ${client.licenseIssueDate || 'غير محدد'}</p>
-                            <p><strong>تاريخ الانتهاء:</strong> ${client.licenseExpiryDate || 'غير محدد'}</p>
-                            <p><strong>الحالة:</strong> ${getLicenseStatusText(client.licenseStatus)}</p>
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    <!-- نوع الخدمة -->
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">الخدمة المطلوبة:</h4>
-                        <div class="grid md:grid-cols-2 gap-3 text-sm">
-                            <p><strong>نوع الخدمة:</strong> ${getServiceTypeText(client.serviceType)}</p>
-                            <p><strong>الأولوية:</strong> ${getPriorityText(client.priority)}</p>
-                            <p><strong>عدد الملفات:</strong> ${client.files.length}</p>
-                        </div>
-                    </div>
-                    
-                    ${client.serviceDetails ? `<p class="mt-3 text-sm"><strong>التفاصيل:</strong> ${client.serviceDetails}</p>` : ''}
-                    <!-- الشواهد المرفوعة -->
-                    ${client.evidenceCount > 0 ? `
-                    <div class="mb-4">
-                        <h4 class="font-semibold text-gray-700 mb-2">الشواهد المرفوعة:</h4>
-                        <div class="text-sm">
-                            <p><strong>عدد الشواهد:</strong> ${client.evidenceCount} من 11</p>
-                            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(client.evidenceCount / 11) * 100}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    ` : ''}
-                    
-                    ${client.files.length > 0 ? `
-                        <div class="mt-3">
-                            <strong class="text-sm">الملفات الإضافية:</strong>
-                            <ul class="text-sm text-gray-600 mt-1">
-                                ${client.files.map(file => `<li>• ${file.name} (${formatFileSize(file.size)})</li>`).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
-                    <div class="flex space-x-3 space-x-reverse mt-3">
-                        <button onclick="viewClientDetails(${index})" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm transition-colors">
-                            عرض التفاصيل الكاملة
-                        </button>
-                        <button onclick="removeClient(${index})" class="text-red-600 hover:text-red-800 text-sm">
-                            حذف هذا العميل
-                        </button>
-                    </div>
-                `;
-                storedDataList.appendChild(clientElement);
+    // تحميل مكتبة GAPI
+    function loadGapiClient() {
+        gapi.load('client:auth2', () => {
+            gapi.client.init({
+                apiKey: API_KEY,
+                clientId: CLIENT_ID,
+                scope: SCOPES,
+                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+            }).then(() => {
+                const authInstance = gapi.auth2.getAuthInstance();
+                authInstance.signIn().then(() => {
+                    isConnected = true;
+                    updateConnectionStatus();
+                    connectBtn.innerHTML = '<svg class="w-6 h-6 inline-block ml-2" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>متصل بنجاح';
+                    connectBtn.className = 'bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg';
+                    uploadSection.classList.remove('opacity-50', 'pointer-events-none');
+                });
             });
-        }
+        });
+    }
 
-        function getServiceTypeText(type) {
-            const types = {
-                'consultation': 'استشارة',
-                'contract': 'عقد',
-                'registration': 'تسجيل',
-                'other': 'أخرى'
-            };
-            return types[type] || type;
-        }
+    // عند الضغط على زر الاتصال
+    connectBtn.addEventListener('click', () => {
+        connectBtn.innerHTML = '<svg class="w-5 h-5 inline-block ml-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>جاري الاتصال...';
+        connectBtn.disabled = true;
+        loadGapiClient();
+    });
+</script>
 
-        function getPriorityText(priority) {
-            const priorities = {
-                'normal': 'عادية',
-                'urgent': 'عاجلة',
-                'very-urgent': 'عاجلة جداً'
-            };
-            return priorities[priority] || priority;
-        }
-
-        function getQualificationText(qualification) {
-            const qualifications = {
-                'bachelor': 'بكالوريوس',
-                'master': 'ماجستير',
-                'phd': 'دكتوراه',
-                'diploma': 'دبلوم',
-                'other': 'أخرى'
-            };
-            return qualifications[qualification] || qualification || 'غير محدد';
-        }
-
-        function getGradeText(grade) {
-            const grades = {
-                'excellent': 'ممتاز',
-                'very-good': 'جيد جداً',
-                'good': 'جيد',
-                'acceptable': 'مقبول'
-            };
-            return grades[grade] || grade || 'غير محدد';
-        }
-
-        function getStageText(stage) {
-            const stages = {
-                'primary': 'ابتدائي',
-                'intermediate': 'متوسط',
-                'secondary': 'ثانوي',
-                'university': 'جامعي',
-                'postgraduate': 'دراسات عليا'
-            };
-            return stages[stage] || stage || 'غير محدد';
-        }
-
-        function getLicenseStatusText(status) {
-            const statuses = {
-                'active': 'نشطة',
-                'expired': 'منتهية الصلاحية',
-                'suspended': 'معلقة',
-                'pending': 'قيد المراجعة'
-            };
-            return statuses[status] || status || 'غير محدد';
-        }
-
-        function removeClient(index) {
-            if (confirm('هل أنت متأكد من حذف بيانات هذا العميل؟')) {
-                clientsData.splice(index, 1);
-                localStorage.setItem('clientsData', JSON.stringify(clientsData));
-                displayStoredData();
-            }
-        }
-
-        function clearStoredData() {
-            if (confirm('هل أنت متأكد من حذف جميع البيانات المحفوظة؟')) {
-                clientsData = [];
-                localStorage.removeItem('clientsData');
-                displayStoredData();
-            }
-        }
-
-        // Client details modal functions
-        function viewClientDetails(index) {
-            const client = clientsData[index];
-            const modal = document.getElementById('clientDetailsModal');
-            const content = document.getElementById('clientDetailsContent');
-            
-            // Assessment elements data
-            const assessmentElements = [
-                { id: 1, name: 'أداء الواجبات الوظيفية', percentage: 10 },
-                { id: 2, name: 'التفاعل مع زملاء العمل', percentage: 10 },
-                { id: 3, name: 'التفاعل مع أولياء الأمور', percentage: 10 },
-                { id: 4, name: 'تنويع استراتيجيات التدريس', percentage: 10 },
-                { id: 5, name: 'تحسين نتائج المتعلمين', percentage: 10 },
-                { id: 6, name: 'إعداد وتنفيذ خطة التعلم', percentage: 10 },
-                { id: 7, name: 'توظيف الوسائل والتقنيات التعليمية المناسبة', percentage: 10 },
-                { id: 8, name: 'البيئة العلمية الصفية', percentage: 5 },
-                { id: 9, name: 'إدارة الصف', percentage: 5 },
-                { id: 10, name: 'تحليل نتائج المتعلمين ومستوى تحصيلهم', percentage: 10 },
-                { id: 11, name: 'تنويع أساليب التقويم', percentage: 10 }
-            ];
-            
-            content.innerHTML = `
-                <!-- Client Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 mb-8">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-2xl font-bold mb-2">${client.fullName}</h3>
-                            <p class="text-blue-100">رقم الهوية: ${client.nationalId}</p>
-                        </div>
-                        <div class="text-left">
-                            <p class="text-blue-100">تاريخ الإرسال</p>
-                            <p class="text-xl font-semibold">${client.submissionDate}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Personal Information -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">1</span>
-                        البيانات الشخصية
-                    </h4>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">الاسم الكامل</p>
-                            <p class="font-semibold text-gray-800">${client.fullName}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">رقم الهوية</p>
-                            <p class="font-semibold text-gray-800">${client.nationalId}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">تاريخ الميلاد</p>
-                            <p class="font-semibold text-gray-800">${client.birthDate || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">رقم الهاتف</p>
-                            <p class="font-semibold text-gray-800">${client.phone}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">البريد الإلكتروني</p>
-                            <p class="font-semibold text-gray-800">${client.email}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Academic Information -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">2</span>
-                        البيانات العلمية
-                    </h4>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">المؤهل العلمي</p>
-                            <p class="font-semibold text-gray-800">${getQualificationText(client.qualification)}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">التخصص</p>
-                            <p class="font-semibold text-gray-800">${client.specialization || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">التقدير</p>
-                            <p class="font-semibold text-gray-800">${getGradeText(client.grade)}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">الدرجة</p>
-                            <p class="font-semibold text-gray-800">${client.degree || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">تاريخ التخرج</p>
-                            <p class="font-semibold text-gray-800">${client.graduationDate || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">تاريخ المباشرة</p>
-                            <p class="font-semibold text-gray-800">${client.startDate || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">المرحلة التعليمية</p>
-                            <p class="font-semibold text-gray-800">${getStageText(client.stage)}</p>
-                        </div>
-                    </div>
-                </div>
-
-                ${client.licenseNumber ? `
-                <!-- Professional License -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">3</span>
-                        الرخصة المهنية
-                    </h4>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">رقم الرخصة</p>
-                            <p class="font-semibold text-gray-800">${client.licenseNumber}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">تاريخ الإصدار</p>
-                            <p class="font-semibold text-gray-800">${client.licenseIssueDate || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">تاريخ الانتهاء</p>
-                            <p class="font-semibold text-gray-800">${client.licenseExpiryDate || 'غير محدد'}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">حالة الرخصة</p>
-                            <p class="font-semibold text-gray-800">${getLicenseStatusText(client.licenseStatus)}</p>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- Service Information -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">4</span>
-                        معلومات الخدمة
-                    </h4>
-                    <div class="grid md:grid-cols-2 gap-4 mb-4">
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">نوع الخدمة</p>
-                            <p class="font-semibold text-gray-800">${getServiceTypeText(client.serviceType)}</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-sm text-gray-600 mb-1">مستوى الأولوية</p>
-                            <p class="font-semibold text-gray-800">${getPriorityText(client.priority)}</p>
-                        </div>
-                    </div>
-                    ${client.serviceDetails ? `
-                    <div class="bg-white p-4 rounded-lg border border-gray-200">
-                        <p class="text-sm text-gray-600 mb-2">تفاصيل الخدمة</p>
-                        <p class="text-gray-800">${client.serviceDetails}</p>
-                    </div>
-                    ` : ''}
-                </div>
-
-                <!-- Assessment Elements and Evidence -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">5</span>
-                        عناصر التقييم والشواهد
-                    </h4>
-                    
-                    <!-- Progress Summary -->
-                    <div class="bg-white rounded-lg p-4 border border-gray-200 mb-6">
-                        <div class="flex items-center justify-between mb-3">
-                            <h5 class="font-semibold text-gray-800">ملخص التقدم</h5>
-                            <span class="text-lg font-bold ${client.evidenceCount === 11 ? 'text-green-600' : 'text-blue-600'}">
-                                ${client.evidenceCount || 0} من 11
-                            </span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3">
-                            <div class="h-3 rounded-full transition-all duration-300 ${client.evidenceCount === 11 ? 'bg-green-600' : client.evidenceCount >= 6 ? 'bg-yellow-600' : 'bg-blue-600'}" 
-                                 style="width: ${((client.evidenceCount || 0) / 11) * 100}%"></div>
-                        </div>
-                        <p class="text-sm text-gray-600 mt-2">نسبة الإنجاز: ${Math.round(((client.evidenceCount || 0) / 11) * 100)}%</p>
-                    </div>
-
-                    <!-- Assessment Elements Grid -->
-                    <div class="grid gap-4">
-                        ${assessmentElements.map(element => {
-                            const hasEvidence = client.evidenceFiles && client.evidenceFiles[element.id];
-                            return `
-                            <div class="bg-white rounded-lg p-4 border border-gray-200 ${hasEvidence ? 'border-green-300 bg-green-50' : ''}">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center">
-                                        <span class="bg-gray-100 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm font-semibold">
-                                            ${element.id}
-                                        </span>
-                                        <h6 class="font-semibold text-gray-800">${element.name}</h6>
-                                    </div>
-                                    <div class="flex items-center space-x-2 space-x-reverse">
-                                        <span class="bg-${element.percentage === 10 ? 'blue' : 'green'}-100 text-${element.percentage === 10 ? 'blue' : 'green'}-800 px-2 py-1 rounded text-sm font-medium">
-                                            ${element.percentage}%
-                                        </span>
-                                        ${hasEvidence ? 
-                                            '<span class="text-green-600 text-xl">✓</span>' : 
-                                            '<span class="text-gray-400 text-xl">○</span>'
-                                        }
-                                    </div>
-                                </div>
-                                ${hasEvidence ? `
-                                <div class="bg-green-100 rounded-lg p-3 border border-green-200">
-                                    <div class="flex items-center space-x-2 space-x-reverse">
-                                        <span class="text-green-600">${getFileIcon(hasEvidence.type)}</span>
-                                        <div>
-                                            <p class="font-medium text-green-800">${hasEvidence.name}</p>
-                                            <p class="text-sm text-green-600">${formatFileSize(hasEvidence.size)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                ` : `
-                                <div class="bg-gray-100 rounded-lg p-3 border border-gray-200">
-                                    <p class="text-gray-500 text-sm text-center">لم يتم رفع شاهد لهذا العنصر</p>
-                                </div>
-                                `}
-                            </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-
-                ${client.files && client.files.length > 0 ? `
-                <!-- Additional Files -->
-                <div class="bg-gray-50 rounded-xl p-6 mb-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                        <span class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center ml-3 text-sm">6</span>
-                        الملفات الإضافية
-                    </h4>
-                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${client.files.map(file => `
-                        <div class="bg-white p-4 rounded-lg border border-gray-200">
-                            <div class="flex items-center space-x-3 space-x-reverse">
-                                <div class="text-2xl">${getFileIcon(file.type)}</div>
-                                <div class="flex-1">
-                                    <p class="font-medium text-gray-800 truncate">${file.name}</p>
-                                    <p class="text-sm text-gray-500">${formatFileSize(file.size)}</p>
-                                </div>
-                            </div>
-                        </div>
-                        `).join('')}
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- Action Buttons -->
-                <div class="flex justify-center space-x-4 space-x-reverse pt-6 border-t border-gray-200">
-                    <button onclick="printClientDetails()" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                        طباعة التقرير
-                    </button>
-                    <button onclick="closeClientDetails()" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-semibold">
-                        إغلاق
-                    </button>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
-        }
-
-        function closeClientDetails() {
-            document.getElementById('clientDetailsModal').classList.add('hidden');
-        }
-
-        function printClientDetails() {
-            const content = document.getElementById('clientDetailsContent').innerHTML;
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html lang="ar" dir="rtl">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>تقرير العميل</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
-                        body { font-family: 'Cairo', sans-serif; }
-                        @media print {
-                            .no-print { display: none !important; }
-                        }
-                    </style>
-                </head>
-                <body class="bg-white p-8">
-                    <div class="max-w-6xl mx-auto">
-                        ${content.replace(/no-print/g, 'hidden')}
-                    </div>
-                <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96af050257b0fa00',t:'MTc1NDQ4ODM5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        }
-
-        // Initialize display
-        displayStoredData();
-    </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b75d415254f9cf',t:'MTc1NDU3NTg5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
