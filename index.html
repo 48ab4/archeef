@@ -135,21 +135,25 @@
                 </div>
             </div>
 
-            <!-- Configuration Notice -->
-            <div class="mt-8 p-6 bg-yellow-50 border-2 border-yellow-200 rounded-2xl">
+            <!-- Configuration Status -->
+            <div class="mt-8 p-6 bg-green-50 border-2 border-green-200 rounded-2xl">
                 <div class="flex items-start">
-                    <svg class="w-6 h-6 text-yellow-600 ml-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    <svg class="w-6 h-6 text-green-600 ml-3 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
                     <div>
-                        <p class="font-bold text-yellow-800 mb-2">إعداد مطلوب</p>
-                        <p class="text-yellow-700 mb-3">لجعل الموقع يعمل بشكل كامل، تحتاج إلى:</p>
-                        <ul class="text-yellow-700 space-y-1 text-sm">
-                            <li>• <strong>Google Cloud Console:</strong> إنشاء مشروع وتفعيل Drive API</li>
-                            <li>• <strong>OAuth 2.0 Credentials:</strong> Client ID و Client Secret</li>
-                            <li>• <strong>Authorized Domains:</strong> إضافة نطاق موقعك</li>
-                            <li>• <strong>API Configuration:</strong> تحديث المتغيرات في الكود</li>
+                        <p class="font-bold text-green-800 mb-2">✅ تم الإعداد بنجاح!</p>
+                        <p class="text-green-700 mb-3">الموقع جاهز للعمل الآن. تأكد من:</p>
+                        <ul class="text-green-700 space-y-1 text-sm">
+                            <li>• ✅ <strong>Client ID:</strong> تم إضافته بنجاح</li>
+                            <li>• ✅ <strong>API Key:</strong> تم إضافته بنجاح</li>
+                            <li>• ⚠️ <strong>Authorized Domains:</strong> أضف نطاق موقعك في Google Console</li>
+                            <li>• ⚠️ <strong>Drive API:</strong> تأكد من تفعيله في Google Cloud Console</li>
                         </ul>
+                        <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-blue-800 text-sm font-semibold">💡 نصيحة:</p>
+                            <p class="text-blue-700 text-sm">في Google Cloud Console، أضف نطاق موقعك إلى "Authorized JavaScript origins" لتجنب أخطاء CORS</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -159,8 +163,8 @@
     <script>
         // ===== إعدادات Google Drive API =====
         // يجب تحديث هذه القيم بالقيم الخاصة بك من Google Cloud Console
-        const CLIENT_ID = '883555732132-kktvprdnoh95l05e7gdfo58g3ths4api.apps.googleusercontent.com'; // ضع Client ID هنا
-        const API_KEY = 'AIzaSyBTYQ93RUBmgvOZjw0B3dGI0cQlDEu1z3I'; // ضع API Key هنا
+        const CLIENT_ID = '883555732132-kktvprdnoh95l05e7gdfo58g3ths4api.apps.googleusercontent.com'; // Client ID الخاص بك
+        const API_KEY = 'AIzaSyBTYQ93RUBmgvOZjw0B3dGI0cQlDEu1z3I'; // API Key الخاص بك
         const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
@@ -227,13 +231,24 @@
                 const initialized = await initializeGapi();
                 if (!initialized) return;
 
-                // طلب المصادقة
+                // طلب المصادقة مع إظهار قائمة الحسابات
                 const authInstance = gapi.auth2.getAuthInstance();
-                const user = await authInstance.signIn();
+                
+                // إعداد خيارات المصادقة لإظهار قائمة الحسابات
+                const signInOptions = {
+                    prompt: 'select_account' // يجبر إظهار قائمة الحسابات
+                };
+                
+                const user = await authInstance.signIn(signInOptions);
                 
                 if (user.isSignedIn()) {
+                    const profile = user.getBasicProfile();
+                    const userEmail = profile.getEmail();
+                    const userName = profile.getName();
+                    const userImage = profile.getImageUrl();
+                    
                     isConnected = true;
-                    updateConnectionStatus(true);
+                    updateConnectionStatus(true, userName, userEmail, userImage);
                     enableUploadSection();
                     
                     connectBtn.innerHTML = '<svg class="w-6 h-6 inline-block ml-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>متصل بنجاح';
@@ -248,12 +263,36 @@
         });
 
         // ===== تحديث حالة الاتصال =====
-        function updateConnectionStatus(connected) {
+        function updateConnectionStatus(connected, userName = '', userEmail = '', userImage = '') {
             if (connected) {
                 statusIndicator.className = 'w-4 h-4 bg-green-500 rounded-full ml-3';
                 statusText.textContent = 'متصل بـ Google Drive';
-                statusDescription.textContent = 'يمكنك الآن رفع الملفات بأمان';
+                
+                // إظهار معلومات المستخدم
+                statusDescription.innerHTML = `
+                    <div class="flex items-center justify-center mt-3">
+                        <img src="${userImage}" alt="صورة المستخدم" class="w-10 h-10 rounded-full ml-3 border-2 border-green-300">
+                        <div class="text-right">
+                            <p class="font-bold text-green-800">${userName}</p>
+                            <p class="text-sm text-green-600">${userEmail}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button id="switchAccountBtn" class="text-blue-600 hover:text-blue-800 underline text-sm font-semibold transition-colors">
+                            تبديل الحساب
+                        </button>
+                    </div>
+                `;
                 connectionStatus.className = 'mb-8 p-6 rounded-2xl bg-green-50 text-center border-2 border-green-200';
+                
+                // إضافة وظيفة تبديل الحساب
+                setTimeout(() => {
+                    const switchBtn = document.getElementById('switchAccountBtn');
+                    if (switchBtn) {
+                        switchBtn.addEventListener('click', switchAccount);
+                    }
+                }, 100);
+                
             } else {
                 statusIndicator.className = 'w-4 h-4 bg-red-500 rounded-full ml-3 animate-pulse';
                 statusText.textContent = 'غير متصل بـ Google Drive';
@@ -266,6 +305,36 @@
         function enableUploadSection() {
             uploadSection.classList.remove('opacity-30', 'pointer-events-none');
             uploadSection.classList.add('opacity-100');
+        }
+
+        // ===== تبديل الحساب =====
+        async function switchAccount() {
+            try {
+                const authInstance = gapi.auth2.getAuthInstance();
+                
+                // تسجيل الخروج من الحساب الحالي
+                await authInstance.signOut();
+                
+                // إعادة تعيين الحالة
+                isConnected = false;
+                updateConnectionStatus(false);
+                uploadSection.classList.add('opacity-30', 'pointer-events-none');
+                uploadSection.classList.remove('opacity-100');
+                
+                // إعادة تعيين زر الاتصال
+                connectBtn.innerHTML = '<svg class="w-7 h-7 inline-block ml-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>الاتصال بـ Google Drive';
+                connectBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-xl text-lg';
+                connectBtn.disabled = false;
+                
+                // إعادة تعيين النموذج
+                resetForm();
+                
+                showSuccess('تم تسجيل الخروج بنجاح. يمكنك الآن اختيار حساب آخر.');
+                
+            } catch (error) {
+                console.error('Switch account error:', error);
+                showError('حدث خطأ أثناء تبديل الحساب');
+            }
         }
 
         // ===== اختيار الملفات =====
@@ -508,5 +577,5 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b8c68f42f7de43',t:'MTc1NDU5MDY5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b8e58142eff9f0',t:'MTc1NDU5MTk2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
