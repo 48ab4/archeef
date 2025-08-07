@@ -2,114 +2,80 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>الاتصال بـ Google Drive</title>
+  <title>ربط جوجل درايف</title>
   <script src="https://apis.google.com/js/api.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <style>
+    body {
+      font-family: 'Tahoma', sans-serif;
+      direction: rtl;
+      background-color: #f8fafc;
+      padding: 2rem;
+      text-align: center;
+    }
+    .btn {
+      background-color: #2563eb;
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-size: 1.2rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #1e40af;
+    }
+    .status {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #15803d;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body>
 
-  <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-    <h1 class="text-2xl font-bold mb-4 text-center">ربط Google Drive</h1>
+  <h1>🔗 ربط حسابك مع Google Drive</h1>
+  <button id="connectBtn" class="btn">تسجيل الدخول باستخدام Google</button>
 
-    <div id="connectionStatus" class="mb-6 p-4 rounded-lg bg-red-50 text-center border border-red-200">
-      <div class="flex items-center justify-center mb-2">
-        <div class="w-3 h-3 bg-red-500 rounded-full ml-2"></div>
-        <span class="font-semibold text-gray-700">غير متصل بـ Google Drive</span>
-      </div>
-      <p class="text-sm text-gray-600">يرجى الاتصال للاستمرار</p>
-    </div>
-
-    <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg w-full">
-      <svg class="w-6 h-6 inline-block ml-2" fill="currentColor" viewBox="0 0 24 24"><path d="M16.88 3.549L7.12 20.451A1 1 0 008 22h8a1 1 0 00.88-.549l9-16A1 1 0 0025 4h-8a1 1 0 00-.88.549z"/></svg>
-      تسجيل الدخول إلى Google Drive
-    </button>
-
-    <div id="uploadSection" class="mt-8 opacity-50 pointer-events-none">
-      <input type="file" id="fileInput" class="mb-4">
-      <button id="uploadBtn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg">رفع الملف</button>
-    </div>
-  </div>
+  <div id="status" class="status"></div>
 
   <script>
     const CLIENT_ID = '883555732132-kktvprdnoh95l05e7gdfo58g3ths4api.apps.googleusercontent.com';
     const API_KEY = 'AIzaSyBTYQ93RUBmgvOZjw0B3dGI0cQlDEu1z3I';
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-    const connectBtn = document.getElementById('connectBtn');
-    const uploadSection = document.getElementById('uploadSection');
-    const connectionStatus = document.getElementById('connectionStatus');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const fileInput = document.getElementById('fileInput');
-
     let isConnected = false;
 
-    function updateConnectionStatus() {
-      connectionStatus.innerHTML = `
-        <div class="flex items-center justify-center mb-2">
-          <div class="w-3 h-3 bg-green-500 rounded-full ml-2"></div>
-          <span class="font-semibold text-gray-700">متصل بـ Google Drive</span>
-        </div>
-        <p class="text-sm text-gray-600">يمكنك الآن رفع الملفات</p>
-      `;
-      connectionStatus.className = 'mb-6 p-4 rounded-lg bg-green-50 text-center border border-green-200';
-    }
+    document.getElementById('connectBtn').addEventListener('click', () => {
+      gapi.load('client:auth2', initClient);
+    });
 
-    function loadGapiClient() {
-      gapi.load('client:auth2', () => {
-        gapi.client.init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          scope: SCOPES,
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-        }).then(() => {
-          const authInstance = gapi.auth2.getAuthInstance();
-          authInstance.signIn().then(() => {
-            isConnected = true;
-            updateConnectionStatus();
-            connectBtn.innerHTML = '<svg class="w-6 h-6 inline-block ml-2" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>متصل بنجاح';
-            connectBtn.className = 'bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg';
-            uploadSection.classList.remove('opacity-50', 'pointer-events-none');
-          });
+    function initClient() {
+      gapi.client.init({
+        apiKey: API_KEY,
+        clientId: CLIENT_ID,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+        scope: SCOPES
+      }).then(() => {
+        const authInstance = gapi.auth2.getAuthInstance();
+        
+        // فرض اختيار الحساب دائمًا
+        authInstance.signIn({ prompt: 'select_account' }).then(() => {
+          const user = authInstance.currentUser.get();
+          const profile = user.getBasicProfile();
+          const email = profile.getEmail();
+
+          isConnected = true;
+          document.getElementById('status').innerHTML = `✅ تم الاتصال بحساب: <strong>${email}</strong>`;
+          document.getElementById('connectBtn').innerText = '✅ متصل بجوجل درايف';
+          document.getElementById('connectBtn').disabled = true;
+        }).catch((error) => {
+          console.error('خطأ في تسجيل الدخول:', error);
+          document.getElementById('status').innerText = '❌ حدث خطأ أثناء الاتصال بحساب Google.';
         });
       });
     }
-
-    connectBtn.addEventListener('click', () => {
-      connectBtn.innerHTML = '<svg class="w-5 h-5 inline-block ml-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>جاري الاتصال...';
-      connectBtn.disabled = true;
-      loadGapiClient();
-    });
-
-    uploadBtn.addEventListener('click', () => {
-      const file = fileInput.files[0];
-      if (!file || !isConnected) return;
-
-      const metadata = {
-        name: file.name,
-        mimeType: file.type
-      };
-
-      const accessToken = gapi.auth.getToken().access_token;
-      const form = new FormData();
-      const blob = new Blob([file], { type: file.type });
-
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', blob);
-
-      fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-        method: 'POST',
-        headers: new Headers({ Authorization: 'Bearer ' + accessToken }),
-        body: form
-      })
-      .then(res => res.json())
-      .then(val => {
-        alert("تم رفع الملف بنجاح. ID: " + val.id);
-        fileInput.value = '';
-      })
-      .catch(err => {
-        alert("حدث خطأ أثناء رفع الملف: " + err.message);
-      });
-    });
   </script>
+
 </body>
 </html>
