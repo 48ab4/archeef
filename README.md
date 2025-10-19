@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة التوزيع المالي المتقدمة</title>
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #eef2ff; /* Light blue background */
+        }
+        .card {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        .result-box {
+            border-bottom: 5px solid; /* Stronger border for final results */
+            transition: transform 0.2s;
+        }
+        .result-box:hover {
+             transform: translateY(-3px);
+        }
+        /* Custom scrollbar for steps */
+        .steps-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen flex items-start justify-center">
+
+    <div class="w-full max-w-4xl bg-white rounded-xl card p-6 sm:p-10 mt-10">
+        <h1 class="text-3xl font-extrabold text-center text-indigo-700 mb-8 border-b-2 pb-2 border-indigo-200">نظام حساب وتوزيع المبالغ المالي المتقدم</h1>
+
+        <!-- قسم إدخال البيانات -->
+        <div class="mb-10 border-b pb-6 border-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+                <span class="text-indigo-500 ml-2">🔢</span>
+                1. إدخال البيانات الأساسية
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- إجمالي حساب عبدالعالم -->
+                <div>
+                    <label for="abdulalaimTotal" class="block text-sm font-medium text-gray-700 mb-1">إجمالي حساب عبدالعالم (ريال)</label>
+                    <input type="number" id="abdulalaimTotal" placeholder="أدخل المبلغ هنا (مثال: 5000)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-right bg-gray-50">
+                </div>
+                <!-- إجمالي حساب إخوتك -->
+                <div>
+                    <label for="siblingsTotal" class="block text-sm font-medium text-gray-700 mb-1">إجمالي حساب إخوتك (ريال)</label>
+                    <input type="number" id="siblingsTotal" placeholder="أدخل المبلغ هنا (مثال: 10000)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-right bg-gray-50">
+                </div>
+            </div>
+
+            <button onclick="calculateDistribution()" class="mt-8 w-full md:w-auto px-10 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 text-lg">
+                تنفيذ وحساب التوزيع الفوري
+            </button>
+        </div>
+
+        <!-- قسم النتائج النهائية -->
+        <div class="mb-10">
+            <h2 class="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+                <span class="text-green-500 ml-2">✅</span>
+                8. النتائج النهائية المعتمدة
+            </h2>
+            <div id="finalResults" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <!-- النتائج ستظهر هنا -->
+            </div>
+        </div>
+
+        <!-- قسم الخطوات التفصيلية والمبالغ المخصومة (التفصيل المرتب) -->
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-5 flex items-center">
+                <span class="text-blue-500 ml-2">📝</span>
+                الخطوات التفصيلية للحساب (من 1 إلى 8)
+            </h2>
+            <div class="steps-container bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div id="detailedSteps" class="space-y-6 text-sm text-gray-700">
+                    <p class="text-center text-gray-500 p-4">الرجاء إدخال الأرقام والضغط على زر الحساب لعرض تسلسل الخطوات.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // دالة للمساعدة في تنسيق الأرقام كعملة (ريال سعودي)
+        const formatCurrency = (amount) => {
+            if (isNaN(amount) || amount === null) return '0.00 ريال';
+            // استخدام Math.round لضمان دقة في الأرقام التي تحتوي على كسور
+            return parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' ريال';
+        };
+
+        function calculateDistribution() {
+            // 1. إدخال البيانات الأساسية
+            const T_A = parseFloat(document.getElementById('abdulalaimTotal').value) || 0;
+            const T_S = parseFloat(document.getElementById('siblingsTotal').value) || 0;
+
+            const R_C = 20; // 20 ريال لكل 1000 ريال تحويل
+            const D_A_rate = 0.05; // 5%
+            const D_S_rate = 0.15; // 15%
+
+            // التحقق من أن المبالغ المدخلة لا تقل عن صفر
+            if (T_A < 0 || T_S < 0) {
+                document.getElementById('finalResults').innerHTML = '<p class="text-red-600 col-span-3 text-center p-4 bg-red-100 rounded-lg font-semibold">⚠️ الرجاء إدخال مبالغ صحيحة (أرقام موجبة).</p>';
+                document.getElementById('detailedSteps').innerHTML = '';
+                return;
+            }
+
+            // 2. خصم النسب المحددة & 3. حساب النسب المخصومة
+            const D_A_amt = T_A * D_A_rate;
+            const D_S_amt = T_S * D_S_rate;
+
+            let B_A1 = T_A - D_A_amt; // حساب عبدالعالم بعد الخصم الأولي
+            let B_S1 = T_S - D_S_amt; // حساب الإخوة بعد الخصم الأولي
+            
+            // 4. تجميع المبالغ المخصومة
+            const D_Total = D_A_amt + D_S_amt;
+            
+            // 5. توزيع المجموع المخصوم
+            const Add_Half = D_Total / 2;
+
+            let B_A2 = B_A1 + Add_Half; // حساب عبدالعالم بعد الإضافة
+            let Final_Asim = Add_Half;       // حساب عاصم بعد الإضافة (النتيجة النهائية له)
+
+            // 6. حساب عمولة التحويل (20 ريال لكل 1000 ريال) - تم التحديث ليتم حسابه بناءً على الرصيد المعدل
+            
+            // العمولة تحسب لحساب عبدالعالم بناءً على رصيده بعد الخصم والإضافة (B_A2)
+            const C_A = (B_A2 / 1000) * R_C; 
+            
+            // العمولة تحسب لحساب الإخوة بناءً على رصيدهم بعد الخصم الأولي (B_S1)
+            const C_S = (B_S1 / 1000) * R_C; 
+
+            // 7. خصم عمولة التحويل
+            const Final_A = B_A2 - C_A;
+            const Final_S = B_S1 - C_S;
+            // Final_Asim تم حسابه في الخطوة 5
+
+            // 8. عرض النتائج النهائية
+            displayFinalResults(Final_A, Final_S, Final_Asim);
+            displayDetailedSteps(T_A, T_S, D_A_amt, D_S_amt, D_Total, Add_Half, C_A, C_S, B_A1, B_S1, B_A2, Final_A, Final_S, Final_Asim);
+        }
+
+        function displayFinalResults(Final_A, Final_S, Final_Asim) {
+            const resultsHTML = `
+                <!-- النتيجة النهائية لحساب عبدالعالم -->
+                <div class="p-5 bg-green-50 rounded-xl result-box border-green-500">
+                    <p class="text-lg font-semibold text-green-700">عبدالعالم</p>
+                    <p class="text-3xl font-extrabold text-green-800 mt-1">${formatCurrency(Final_A)}</p>
+                    <span class="inline-block px-3 py-1 text-xs font-semibold text-green-800 bg-green-200 rounded-full mt-2">رصيد نهائي</span>
+                </div>
+
+                <!-- النتيجة النهائية لحساب الإخوة -->
+                <div class="p-5 bg-yellow-50 rounded-xl result-box border-yellow-500">
+                    <p class="text-lg font-semibold text-yellow-700">حساب إخوتك</p>
+                    <p class="text-3xl font-extrabold text-yellow-800 mt-1">${formatCurrency(Final_S)}</p>
+                    <span class="inline-block px-3 py-1 text-xs font-semibold text-yellow-800 bg-yellow-200 rounded-full mt-2">بعد الخصم والعمولة</span>
+                </div>
+                
+                <!-- النتيجة النهائية لحساب عاصم -->
+                <div class="p-5 bg-blue-50 rounded-xl result-box border-blue-500">
+                    <p class="text-lg font-semibold text-blue-700">عاصم</p>
+                    <p class="text-3xl font-extrabold text-blue-800 mt-1">${formatCurrency(Final_Asim)}</p>
+                    <span class="inline-block px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-200 rounded-full mt-2">نصيب من المخصوم</span>
+                </div>
+            `;
+            document.getElementById('finalResults').innerHTML = resultsHTML;
+        }
+
+        function displayDetailedSteps(T_A, T_S, D_A_amt, D_S_amt, D_Total, Add_Half, C_A, C_S, B_A1, B_S1, B_A2, Final_A, Final_S, Final_Asim) {
+            const stepsHTML = `
+                <div class="space-y-6">
+
+                    <!-- الخطوة 1: المدخلات -->
+                    <div class="bg-indigo-50 p-4 rounded-lg border-r-4 border-indigo-500">
+                        <h3 class="flex items-center text-lg font-extrabold text-indigo-700 mb-2">
+                            <span class="ml-2 bg-indigo-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-sm">1</span>
+                            البيانات الأساسية (المدخلات)
+                        </h3>
+                        <p class="text-gray-800">إجمالي حساب عبدالعالم: <strong class="text-indigo-900">${formatCurrency(T_A)}</strong></p>
+                        <p class="text-gray-800">إجمالي حساب إخوتك: <strong class="text-indigo-900">${formatCurrency(T_S)}</strong></p>
+                    </div>
+
+                    <!-- الخطوات 2 و 3: الخصم وحساب المبالغ المخصومة -->
+                    <div class="bg-red-50 p-4 rounded-lg border-r-4 border-red-500">
+                        <h3 class="flex items-center text-lg font-extrabold text-red-700 mb-2">
+                            <span class="ml-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-sm">2-3</span>
+                            خصم النسب وحساب المبالغ المخصومة
+                        </h3>
+                        <p><strong>• المبلغ المخصوم من عبدالعالم (5%):</strong> <span class="text-red-700 font-bold">${formatCurrency(D_A_amt)}</span></p>
+                        <p><strong>• المبلغ المخصوم من الإخوة (15%):</strong> <span class="text-red-700 font-bold">${formatCurrency(D_S_amt)}</span></p>
+                        <hr class="my-2 border-red-200">
+                        <p>الرصيد المؤقت لعبدالعالم (بعد الخصم الأولي): <strong class="text-gray-900">${formatCurrency(B_A1)}</strong></p>
+                        <p>الرصيد المؤقت للإخوة (بعد الخصم الأولي): <strong class="text-gray-900">${formatCurrency(B_S1)}</strong></p>
+                    </div>
+
+                    <!-- الخطوات 4 و 5: تجميع وتوزيع المخصوم -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border-r-4 border-yellow-500">
+                        <h3 class="flex items-center text-lg font-extrabold text-yellow-700 mb-2">
+                            <span class="ml-2 bg-yellow-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-sm">4-5</span>
+                            تجميع وتوزيع المبالغ المخصومة
+                        </h3>
+                        <p><strong>المجموع المخصوم الكلي (D_Total):</strong> <strong class="text-yellow-900 text-lg">${formatCurrency(D_Total)}</strong></p>
+                        <p>نصيب النصف الواحد: <strong class="text-green-700">${formatCurrency(Add_Half)}</strong> (يُضاف لكل من عبدالعالم وعاصم)</p>
+                        <hr class="my-2 border-yellow-200">
+                        <p><strong>• رصيد عاصم الأولي:</strong> <strong class="text-blue-700 font-bold">${formatCurrency(Final_Asim)}</strong></p>
+                        <p><strong>• رصيد عبدالعالم بعد الإضافة (الرصيد الأساسي لحساب العمولة):</strong> ${formatCurrency(B_A1)} + ${formatCurrency(Add_Half)} = <strong class="text-gray-900">${formatCurrency(B_A2)}</strong></p>
+                    </div>
+
+                    <!-- الخطوات 6 و 7: حساب وخصم العمولة (التطبيق الجديد) -->
+                    <div class="bg-purple-50 p-4 rounded-lg border-r-4 border-purple-500">
+                        <h3 class="flex items-center text-lg font-extrabold text-purple-700 mb-2">
+                            <span class="ml-2 bg-purple-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-sm">6-7</span>
+                            حساب وخصم عمولة التحويل (مبني على الأرصدة المعدلة)
+                        </h3>
+                        <p><strong>عمولة عبدالعالم:</strong> محسوبة على الرصيد المعدل (${formatCurrency(B_A2)}) = <strong class="text-purple-700">${formatCurrency(C_A)}</strong></p>
+                        <p><strong>عمولة الإخوة:</strong> محسوبة على الرصيد بعد الخصم الأولي (${formatCurrency(B_S1)}) = <strong class="text-purple-700">${formatCurrency(C_S)}</strong></p>
+                        <hr class="my-2 border-purple-200">
+                        <p>الرصيد النهائي لعبدالعالم: ${formatCurrency(B_A2)} - ${formatCurrency(C_A)} = <span class="text-green-700 font-extrabold">${formatCurrency(Final_A)}</span></p>
+                        <p>الرصيد النهائي للإخوة: ${formatCurrency(B_S1)} - ${formatCurrency(C_S)} = <span class="text-yellow-700 font-extrabold">${formatCurrency(Final_S)}</span></p>
+                    </div>
+
+                    <!-- الخطوة 8: عرض النتائج النهائية (تأكيد) -->
+                    <div class="bg-teal-50 p-4 rounded-lg border-r-4 border-teal-500">
+                        <h3 class="flex items-center text-lg font-extrabold text-teal-700 mb-2">
+                            <span class="ml-2 bg-teal-500 text-white w-6 h-6 flex items-center justify-center rounded-full text-sm">8</span>
+                            ملخص النتائج النهائية
+                        </h3>
+                        <p>حساب عبدالعالم النهائي: <strong class="text-teal-900 text-xl">${formatCurrency(Final_A)}</strong></p>
+                        <p>حساب الإخوة النهائي: <strong class="text-teal-900 text-xl">${formatCurrency(Final_S)}</strong></p>
+                        <p>حساب عاصم النهائي: <strong class="text-teal-900 text-xl">${formatCurrency(Final_Asim)}</strong></p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailedSteps').innerHTML = stepsHTML;
+        }
+
+        // تنفيذ الحساب عند تحميل الصفحة بقيم صفرية لتهيئة الواجهة
+        window.onload = function() {
+            // يتم استدعاء calculateDistribution() لتهيئة النتائج الأولية (بقيم صفر)
+            // وللتأكد من ظهور تفاصيل الخطوات بشكل منظم عند أول تحميل
+            calculateDistribution();
+        };
+
+    </script>
+</body>
+</html>
